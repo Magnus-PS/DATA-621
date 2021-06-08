@@ -1,0 +1,349 @@
+---
+title: "Influenza and Pneumonia Mortality during the Global COVID-19 Pandemic and the Impact of Local Government Restrictions"
+subtitle: "DATA 621: Final Project Report"
+author:
+- name: Angel Claudio*
+  num: a
+- name: Bonnie Cooper
+  num: a,b
+- name: Manolis Manoli
+  num: a
+- name: Magnus Skonberg
+  num: a
+- name: Christian Thieme
+  num: a
+- name: Leo Yi
+  num: a      
+address:
+- num: a
+  org: Dept. of Information Technology and Data Analytics, CUNY School of Professional Studies, New York, NY
+- num: b
+  org: Department of Biological Studies, SUNY College of Optometry, New York, NY
+
+corres: "*Corresponding author: A. Claudio \\email{angelclaudiopr@gmail.com }"
+authormark: Claudio \emph{et al}.
+articletype: Research article
+received: 2017-01-01
+revised: 2017-02-01
+accepted: 2017-03-01
+abstract: "The global COVID-19 pandemic has presented unprecidented challenges and changes for modern health care. Recently, the rise of COVID-19 has been associated with a paradoxical decline in cases of patients presenting with communicable diseases such a influenza, tuberculosis, meningitus, social sexually transmitted diseases and even fewer cases of cardiovascular conditions. The cause of these declines has not been determined, but some research suggests that community mitigation measures such as social distancing, wearing of masks and school closures have impacted the spread of diseases. However, a recent study of cardiovascular deaths during COVID-19 revealed that, while it is true that cases diagnosed as cadiovascular disease decreased, there was, in fact, an increase in cardiovascular deaths. The increased cardiovascular mortality indicates that the pandemic had an indirect effect on cardiovascular patients by changing patient behavior such that patients avoided hospital visits, and by proxy, avoided proper disease diagnosis and/or treatment. In this study, we investigate the mortality rates of pneumonia and influenza (PI) during the COVID-19 pandemic in the United Stated. We find that the majority of U.S. states reported excess PI mortality during the 2020-2021 flu season. Furthermore, we investigated the relationship between mortality rates and the degree of government restrictions during the pandemic and found that restrictions had a significant effect on predicting excess PI deaths."
+keywords: COVID-19, influenza, data science, epidemiology, regression
+bibliography: bibfile.bib
+output: rticles::sim_article
+---
+
+
+```{r setup, include=FALSE}
+# A.C. Echo set to auto false since professor interested in results only.
+knitr::opts_chunk$set(echo = F, warning = F, eval = T) 
+library(tidyr)
+library( gridExtra )
+library( rvest )
+library( tidyverse )
+library( multcompView )
+library(dplyr)
+library(ggplot2)
+library( usmap )
+library( scales )
+library( ggpubr )
+```
+
+
+# INTRODUCTION
+
+The COVID-19 pandemic has directly and severely impacted global health and health care systems. In addition, several collateral impacts of the pandemic have been noticed. For instance, there have been global reports of decreased positive diagnostic rates for diseases as varied as respiratory, cardiac, cerebrovascular and sexually transmitted diseases. However, these findings conflict with studies reporting increased mortalities for cardiac arrest and ischemic stroke. We report here an independent investigation of the mortality rates of influenza and pneumonia during the COVID-19 pandemic in the United Stated using publicly available data from the CDC. We find that, on a national scale, there was a significant increase in combined influenza and pneumonia mortality since the onset of the COVID-19 pandemic. At first glance, this would appear to support a theory that the pandemic has had the detrimental collateral effect of depressing the diagnoses of disease due to changes in patient behavior and/or health care accessibility. However, making this assertion for influenza and pneumonia is complicated by the fact that these diseases present with similar indicators as COVID-19 thereby confounding COVID-19, influenza and pneumonia mortality rates. Alternatively, it has been suggested that disease mitigation efforts set in place during the pandemic (e.g. social distancing and wearing masks) have directly contributed to the decreased positivity rates of diseases including influenza and pneumonia. To investigate the impact of mitigation efforts further, we incorporate publicly available data of COVID-19 restrictions enacted on the state-level in the US to consider whether such restrictions correlate with differences in influenza and pneumonia mortalities during the COVID-19 pandemic.
+
+## Literature Review
+
+In early 2020, as the severity of the COVID-19 global pandemic became apparent, health care systems were bracing for the added impact of influenza season. The impact of the COVID-19 pandemic was not felt evenly across the globe. While some communities, particularly in rural areas, experienced relatively few cases of COVID-19, there were many communities where medical resources were in demand well beyond their limit. For example, in March 2020 the European COVID-19 epicenter of Lombardi, Italy experienced continuous and exponential growth in ICU admissions during the first several weeks of the outbreak, quickly reaching capacity and needing to transfer other critically ill patients outside of the region [@grasselli2020critical]. ICU capacity and ventilator availability necessitated the triaging of COVID patients. Shortly thereafter, similar strains on medical systems were experienced in many densely populated cities such as Madrid [@working2020first], London, New York City and many other urban centers [@kontis2020magnitude]. How would medical facilities already stretched to the limits meet the needs of COVID-19 patients as well as the added burden of further respiratory disease cases from the annual influenza season?
+
+Remarkably, many communities reported historic lows or even the near absence of influenza infections [@hills2020influenza]. For example, in the United States, reported cases of influenza dramatically dropped within the first several weeks of COVID-19 emergency declarations and the enactment of protective community measures such as social distancing, mask wearing, and school closures thus cutting the 2019-2020 influenza season dramatically short [@olsen2020decreased]. Initially, reports of the decreased influenza case rates were attributed to a decrease in frequency of testing under the rationale that fewer patients were being tested for influenza because they were socially isolating or otherwise hesitant to report to a medical facility due to concerns of catching COVID-19. However, this theory is refuted by findings in several Southern Hemisphere countries such as Chile and South Africa where influenza testing remained relatively unchanged from previous years yet reported influenza cases were significantly lower: 12/21,178 for Chile and 6/2,098. In fact, Australia was actually able to increase it's influenza testing for the 2020 season and reported the 'near absence' of influenza with only 33/60,031 positive cases. For comparison, Australia reported a 13.7% influenza positive rate the previous year[@olsen2020decreased]. Similarly, decreased influenza positivity rates were reported in mainland China[@liu2020influenza], Japan[@sakamoto2020seasonal], Korea[@lee2020impact] and Singapore[@soo2020decreased].
+
+Influenza was not the only disease to see a decrease during COVID-19. A study of French pediatric emergency room visits revealed significant decreases in airborn and fecal-orally transmitted diseases such as the common cold, gastroenteritis, bronchitis and acute otitis [@angoulvant2020covid]. Laboratory test positivity rates for enteroviral meningitus, a socially transmitted central nervous system infection, suggest that the 2020 season for enterovirus 'did not occur' in the US [@kies2020decrease] and saw dramatic decreases in Taiwan [@chiu2020impact]. Additionally, US test positivity rates for 42 of 44 sexually transmitted diseases decreased of which 37 saw reductions $\ge$ 20% [@crane2021reporting]. Furthermore, several studies have drawn an association with observed declines in communicable disease positivity rates to direct impacts of non-pharmaceutical intervention measures such as social distancing and wearing masks on mitigating communicable diseases [@world2019non; @chiu2020impact; @angoulvant2020covid; @soo2020decreased; @lee2020impact; @kuo2020collateral].
+
+While the bulk of decreased disease rates have been reported for communicable transmissions, several studies indicate a decrease in non-communicable diagnoses such as cardiac diseases [@bhatt2020fewer; @solomon2020covid; @garcia2020reduction] and cerebrovascular disease (e.g. stroke) [@dula2020decrease; @uchino2020decline]. Alarmingly, although many healthcare systems experienced a decrease in cardiac hospitalizations, studies demonstrate an increase in at-home cardiac arrest [@baldi2020covid] as well as increases in cardiac mortalities [@wadhera2021cardiovascular; @young2021covid]. A similar increase in stroke and related cerebrovascular mortalities has been reported [@sharma2020excess] and it has been further suggested by the CDC that the decline in medical care such as emergency room visits may partially explain the excess in mortality for many non-COVID related deaths [@lange2020potential]. This supports the alternative theory that disease rates are increasing as collateral damage due to changes in medical and social practices during the COVID-19 pandemic (i.e. hospital stays shortened and treatment truncated and/or people avoiding the doctor and disease going undiagnosed). The goal of this study is to evaluate these two different interpretations of the pandemic's impact on disease using influenza and pneumonia mortality as an example. Additionally, we examine the effect of COVID-19 restrictions set in place at the state level as it relates to influenza and pneumonia mortalities.
+
+
+# METHODS
+
+## Data Acquisition
+
+Our analysis merges data sets from two main sources. First, data on deaths due to influenza, pneumonia and COVID-19 aggregated by both the state and national level were accessed from the [CDC's Fluview Weekly U.S. Influenza Surveillance Report website](https://www.cdc.gov/flu/weekly/index.htm). This data set also contains weekly projected deaths due to influenza and pneumonia. Second, we access data that describes [state-level COVID-19 government restriction measures](https://en.wikipedia.org/wiki/U.S._state_and_local_government_responses_to_the_COVID-19_pandemic) made public on Wikipedia. In addition, we incorporated demographic feature variables such a state-level population and mean state-level population density from U.S. Census Bureau data. The details for accessing and importing the data are given in the code appendix.
+
+## Exploratory Data Analysis
+
+A goal of our analysis is to compare the mortality rates for influenza and pneumonia during the COVID-19 global pandemic against the mortality rates for preceding years at the state level. To accomplish this, we will first explore pneumonia, influenza and COVID-19 deaths at the national level with data acquired from the CDC's Fluview website. Figure \ref{fig:plot} shows the mortality rates where pneumonia and influenza (PI) were attributed as causes of death for the flu seasons 2013-2014 to 2018-2019 (in blue). Additionally, mortality rates are shown where the cause of death was attributed to pneumonia, influenza and COVID-19 (PIC) (in red) for the 2019-2020 and 2020-2021 flu seasons. Here, mortality is given in terms of percentage of deaths per year. The 'expected' mortality series (green) describes the predicted seasonal baseline for PI deaths and is calculated from a standard time series regression model that incorporates the PI mortality rates of the previous five years[@serfling1963methods]. The 'threshold' line describes a limit of 1.645 standard deviations above the expected PI mortality rate which is interpreted as a PI epidemic.  
+
+```{r nat_PIC, fig.cap = "U.S. National Pneumonia, Influenza, and COVID-19 Mortality. PI and PIC percentages are plotted as blue and red series respectively. Estimated PI is given in green while the black series describeds the PI epidemic threshold\\label{fig:plot}"}
+#png(file="/home/bonzilla/Documents/MSDS/critical-group-1/Final_Project/figure1.png")
+url <- "https://raw.githubusercontent.com/SmilodonCub/DATA621/master/NCHSData12.csv"
+PIC_national_df <- read.csv( url ) %>%
+    rowid_to_column()
+colnames( PIC_national_df ) <- c( 'rowid', 'year', 'week', 'perc_death_PI', 
+                                  'perc_death_PIC', 'expected', 'threshold', 
+                                  'all_deaths', 'P_deaths', 'I_deaths', 
+                                  'C_deaths', 'PIC_deaths' )
+ggplot( data = PIC_national_df, aes( x = rowid, y = perc_death_PIC, color = 'PIC %' ) ) + 
+    geom_line( ) +
+    geom_line( aes( x = rowid, y = threshold, color = 'threshold' ) ) +
+    geom_line( aes( x = rowid, y = expected, color = 'expected' ) ) +
+    geom_line( aes( x = rowid, y = perc_death_PI, color = 'PI %') ) +
+    theme_classic() +
+    ggtitle( 'Pneumonia, Influenza, and COVID-19 Mortality', subtitle = " from the NCHS Mortality Surveillance System" ) +
+    ylab( '% Deaths' ) +
+    xlab( 'Flu Season' ) +
+    scale_x_continuous(breaks=c(seq( 25,392,49)),
+                       labels=c("2013-14", "2014-15", "2015-16", "2016-17", "2017-18", "2018-19", "2019-20", "2020-21")) +
+    scale_color_manual(name="PIC data", values=c("PIC %"="red", "PI %"="blue", 'threshold'='black', 'expected'='green'))
+#dev.off()
+```
+
+In observing the pre-pandemic PI data, we see the cyclic annual behavior of the increase in PI mortality with each flu season. However, we also observe that PI mortality has crossed the epidemic threshold (black line) in several recent flu seasons. It is also evident that the PIC mortality, given in red, rises numerous standard deviations higher than the epidemic threshold. Given that flu cases have been reported to be significantly lower during the COVID-19 pandemic, if PI mortality were to follow suit, then one would expect to see the PI data to fall below the expected and threshold predictions. However, we see from Figure \ref{fig:plot} that this is clearly not the case: PI mortality for the 2019-2020 and 2020-2021 flu seasons are much higher than expected and follow the envelope of the PIC mortality. To investigate this further, we will turn from a national-level to a state-level analysis of PI and PIC mortality rates.
+
+PI & PIC mortality rates aggregated by state were accessed from the CDC's Fluview website (see Appendix for details). We are interested in the variability of PI mortality rates across US states for previous flu seasons and to quantify how this compares to the expected PI mortality rates as well as the observed PI mortality rates for flu seasons during the COVID-19 pandemic. To this end, we took the weekly mean of the national baseline 'expected' PI mortality rates for the past 8 years. We then calculated the mean difference between the observed PI and expected PI rates for each U.S. state. We interpret this as a measure of excess PI mortality rate. The boxplot (left panel) in Figure \ref{fig:plot2} shows the distributions of the mean differences between observed and expected PI mortality rates for U.S. states per flu season. It is immediately evident that the distribution for the 2020-2021 flu season has a significantly different mean and greater spread of data points. The panel to the right in Figure \ref{rig:plot2} shows the results of a Tukey Honest Significant Difference test between the data for each season as plotted to the left. While there are a select few seasonal comparisons of statistical significance (e.g. between 2019-2020 and 2018-2019 seasons), the differences of mean levels for the 2020-2021 season are several standard deviations higher than all other season comparisons. 
+
+
+```{r message=F}
+expectedDeaths <- PIC_national_df %>%
+    dplyr::select( c( 'week', 'expected', 'threshold' ) ) %>%
+    dplyr::group_by(week) %>%
+    dplyr::summarise( 'expected' = mean( expected ), 'threshold' = mean( threshold ) ) %>%
+    dplyr::rename( WEEK = week )
+url <- "https://raw.githubusercontent.com/SmilodonCub/DATA621/master/State_Custom_Data.csv"
+PIC_by_state_df <- read.csv( url )
+# remove instances of this string to make later conversion easier
+PIC_by_state_df[PIC_by_state_df == 'Insufficient Data'] <- NA
+PIC_by_state_df <- PIC_by_state_df %>%
+  dplyr::select( -c( 'AREA', 'AGE.GROUP' ) ) %>% #remove AREA & AGE.GROUP -> Uninformative, but could add later if people think it'd be an interesting feature
+  mutate( NUM.INFLUENZA.DEATHS = as.numeric(NUM.INFLUENZA.DEATHS),
+          NUM.PNEUMONIA.DEATHS = as.numeric(NUM.PNEUMONIA.DEATHS),
+          NUM.COVID.19.DEATHS = as.numeric(NUM.COVID.19.DEATHS),
+          TOTAL.PIC = as.numeric(TOTAL.PIC),
+          TOTAL.DEATHS = as.numeric(TOTAL.DEATHS)) #remove commas and recast numeric
+#Join the mean expected deaths by week to the df
+PIC_by_state_df <- left_join( PIC_by_state_df, expectedDeaths, by = "WEEK", copy = FALSE ) %>%
+    mutate( PI_expected_diff = PERCENT.P.I - expected,
+            PI_threshold_diff = PERCENT.P.I - threshold )
+# visualize deviation from expected PI deaths for each flu season:
+eachSeason_diff <- PIC_by_state_df %>%
+    dplyr::rename( area = SUB.AREA, season = SEASON ) %>%
+    dplyr::group_by( season, area ) %>%
+    dplyr::summarise( meanPI_expected_diff = mean( PI_expected_diff, na.rm = TRUE ),
+               meanPI_threshold_diff = mean( PI_threshold_diff, na.rm = TRUE )) %>%
+    dplyr::mutate( season = factor( season ) )
+p1 <- ggplot(data = eachSeason_diff, aes( x = season, y = meanPI_expected_diff ) ) +
+    geom_boxplot() +
+    geom_jitter( color="black", size = 0.4, alpha = 0.6 ) +
+    theme_classic() +
+    theme( axis.text.x = element_text( angle = 45, hjust =1 ) ) +
+    ggtitle( 'Excess PI Mortality') +
+    ylab( '% Deaths' ) +
+    xlab( 'Flu Season' )
+#ANOVA + TUKEY Test for PIC state-level
+eachSeason_diff <- eachSeason_diff %>%
+    mutate( season2 = gsub("-","", season ) )
+#ANOVA + Tukey test
+linmod <- lm( data = eachSeason_diff, meanPI_expected_diff ~ season2 )
+ANOVA <- aov( linmod )
+TUKEY <- TukeyHSD( x = ANOVA, 'season2', conf.level = 0.99)
+TUKEY_df <- data.frame( TUKEY$season2 )
+TUKEY_df <- tibble::rownames_to_column( TUKEY_df, 'Season' )
+p3 <- ggplot() +
+    geom_linerange( data = TUKEY_df, mapping = aes( y = Season, xmin = lwr, xmax = upr ), width = 0.2, size = 1, color = 'red' ) +
+    geom_point( data = TUKEY_df, aes( x = diff, y = Season ), size = 3, shape = 21, color = 'red' ) +
+    geom_vline( xintercept = 0, linetype = 'dashed', color = 'gray' ) +
+    xlab( 'Difference in mean level' ) +
+    ggtitle( "99% Confidence Level" ) +
+    theme_classic( )
+```
+
+```{r message=F, fig.cap = "State-level differences in observed and expected PI mortality. A) distribution of excess PI mortality for US states. B) Confidence Intervals for Tukey Honest Significance tests of pairs \\label{fig:plot2}"}
+#png(file="/home/bonzilla/Documents/MSDS/critical-group-1/Final_Project/figure2.png")
+grid.arrange( arrangeGrob(p1, top = 'A'), arrangeGrob(p3, top = 'B'), ncol =2 )
+#dev.off()
+```
+
+The degree of the differences in mean levels make 2020-21 an outlier with PI mortality much greater than the expected value and by much larger deviations than any other season included in analysis. This demonstrates that mean PI mortality for the 2020-2021 season is much greater than previous flu seasons and we also observe that the spread of data points for each state have higher variability that previous seasons. For example, a few states have an average mortality comparable to the expected mortality rate whereas several states towards the higher end of the data range have greater than 10% mortality rates higher than expected. Figure \ref{fig:plot3} A) gives a geographical heat map for the maximum excess PI mortality value for (top) and maximum weekly PIC mortality for US states. Some similarities in intensity are observed, however, the relation  between these two variables is more apparent in the adjacent scatter plot. Figure \ref{fig:plot3} B) describes the strong linear relationship between excess PI and PIC mortality. States with high maximum values of weekly PIC deaths during the 2020-2021 flu season typically have high maximum values of excess PI mortality rates. However, there is variability in the distribution that this simple linear regression does not account for.
+
+```{r message=F, fig.cap = "Visualizing Excess PI mortality for US states. A) geographic heat maps for the maximum weekly value of excess PI motaltity (top) and maximum weekly values of PIC mortality (bottom). B) Relation between states' max. weekly excess PI mortality and max. weekly PIC mortality with line of best fit and pearson's correlation values\\label{fig:plot3}"}
+#png(file="/home/bonzilla/Documents/MSDS/critical-group-1/Final_Project/figure3.png")
+url <- 'https://raw.githubusercontent.com/SmilodonCub/DATA621/master/PIC_PIexcess_relation.csv'
+relation_plot <- read.csv( url )
+#glimpse( relation_plot )
+
+pdiff <- plot_usmap( data = relation_plot, values = 'max_PI_expected_diff', labels = F ) +
+  scale_fill_continuous( low = 'white', high = 'red',
+                         name = 'Max Excess PI', label = scales::comma,
+                         limits = c( 0,25 ) ) +
+  ggtitle( 'Max. Excess PI Mortality' ) +
+  theme( legend.position = 'none' ) 
+  #theme( panel.background = element_rect( colour = "red"))
+
+pperPIC <- plot_usmap( data = relation_plot, values = 'max_percent_PIC', labels = F ) +
+  scale_fill_continuous( low = 'white', high = 'red',
+                         name = 'Max PIC', label = scales::comma,
+                         limits = c( 0,60 ) ) +
+  ggtitle( 'Max. PIC Mortality' ) +
+  theme( legend.position = 'none' ) 
+  #theme( panel.background = element_rect( colour = "red"))
+
+prel <- ggplot( data = relation_plot, aes( x = max_percent_PIC, y = max_PI_expected_diff, label = SUB.AREA ) ) +
+  geom_point() +
+  geom_smooth( method = 'lm', se = F, color = 'black' ) +
+  stat_cor( r.digits = 3, p.accuracy = 0.001 ) +
+  geom_label(check_overlap = TRUE, nudge_y = 0.75, size = 3) +
+  theme_classic() +
+  ggtitle('Excess PI mortality vs PIC Mortality') +
+  ylab( 'Max. Weekly Excess PI Mort. (%Deaths)' ) +
+  xlab( 'Max. Weekly PIC Mortality' )
+
+grid.arrange( arrangeGrob( pdiff, pperPIC, top = 'A' ), arrangeGrob( prel, top = 'B' ), ncol = 2, widths = c( 4,8 ) )
+#dev.off()
+```
+
+To investigate the variability in our data further, we next incorporate variables that account for a state's use of COVID-19 government restrictions. The bar graph in Figure \ref{fig:plot4} shows the most common restrictions enacted by states for several government enacted responses to the COVID-19 pandemic. These features will be merged with our PIC data set and used to build models to evaluate the explanatory power of COVID-19 restrictions on PI mortality rates. For example, do states that were aggressive in locking down have lower deviations from the expected PI mortality? Do states with very lax restrictions have comparatively higher deviations from the expected PI mortality? Additionally, we explore the weight of demographic features such as state population and population density.
+
+```{r}
+## Statewide Restriction
+url <- "http://en.wikipedia.org/wiki/U.S._state_and_local_government_responses_to_the_COVID-19_pandemic"
+state_level_regulation_df <- url %>%
+  read_html() %>%
+  html_node(xpath='//*[@id="mw-content-text"]/div[1]/table[2]') %>%
+  html_table(fill=T)
+state_level_regulation_df <- state_level_regulation_df[-1,]
+state_level_regulation_df <- state_level_regulation_df[,-1]
+state_level_regulation_df <- state_level_regulation_df[,-11]
+colnames( state_level_regulation_df ) <- c( "State territory", "State of emergency declared", "Stay at home ordered",
+                                            "Face coverings required in public", "Gatherings banned", 
+                                            "Out of state travel restrictions", "Closures School", "Closures Daycare",
+                                            "Closures Bars", "Closures Retail")
+state_level_regulation_df <- state_level_regulation_df %>%
+  modify_if( is.character, as.factor )
+```
+
+```{r message=F, fig.cap = "State-level COVID-19 Restrictions. Bar graph showing the most common restrictions for each type of government response to the pandemic. \\label{fig:plot4}"}
+#png(file="/home/bonzilla/Documents/MSDS/critical-group-1/Final_Project/figure4.png")
+p5 <- state_level_regulation_df %>%
+    dplyr::select( !('State territory') ) %>%
+    inspectdf::inspect_imb( ) %>% inspectdf::show_plot()
+p5 + theme_classic() +
+    theme( axis.text.x = element_text( angle = 45, hjust =1 ) ) +
+    ggtitle( 'State-level COVID-19 Regulations', subtitle = 'Most common levels by feature column' )
+#dev.off()
+```
+  
+
+## Data Preparation
+Full details of the data preparation steps that were applied to ready the data set for modeling can be found in the appendix. A brief description is given as follows: The state-level PIC data set and state-level COVID-19 regulation data sets were merged by commonality of state names. The states North Carolina and West Virginia were excluded from analysis due to missing values in the target feature, excess PI mortality. The data was further subset by the weeks where data was reliably available for the 2020-2021 flu season (22/53 weeks). Missing values were then imputed by applying kalman smoothing methods from the `imputeTS` library. Additionally, new features were engineered to represent the state-level COVID-19 regulation variables in a way to make further analysis more straight-forward (e.g. reducing the levels of feature variables, or creating flag variables, and removing uninformative features). 
+
+
+## Model Building
+Following data preparation, we built several models to explore the explanatory power of state-level COVID-19 restriction features on the distribution of excess PI deaths. For baseline comparison, we include the simple linear regression model (Model 1) which describes the excess PI mortality as a function of PIC mortality. Model 1 results in a significant fit (p-val < 2.2e-16) and an $R^2$ value of 0.7934. This demonstrates a clear relationship between the two variables: U.S. states with low PIC mortality rates tend to have low excess PI mortality whereas states with high PIC mortality have high excess PI mortality rates. Furthermore, Model 1's slope coefficient of ~0.49 suggests that for every percent increase of PIC mortality, there is a corresponding 0.49% increase in excess PI mortality. This relationship is not surprising because the COVID-19 patients often present with pneumonia and/or flu-like symptoms making it likely that many of the excess PI deaths are undiagnosed COVID-19 deaths[@beusekom2020classified], a topic which we take up further in the discussion section.  
+
+The linear correlation of PIC mortality and excess PI mortality is significant and strong. However, the distribution of the data shows evidence of heteroscedasticity and visualization of Model 1 diagnostic plots (see code appendix) suggests that the variance of residuals is not constant across the data series. In an effort to improve our understanding of excess PI mortality, we proceed to develop a series of models that incorporate data such as the state-level government restriction features. The goal of the models developed here are to better account for the variance in excess PI mortality and to test the role government restrictions play in influencing PI mortality.
+
+We describe here four additional models: Models 2 and 3 are both multiple linear regression models that use step-wise AIC coefficient selection to incorporate the state-level government restrictions as feature variables. Model 2 uses engineered variables that simplify restriction information as a binary flag (e.g. 1:yes or 0:no ), whereas Model 3 incorporates all factors levels of the categorical government restrictions features as well as features that account for the state-level population and population density.  
+
+Model 2 and 3 both utilize step-wise AIC regression methods to select features, however, Model 4 and 5 use different approaches. Model 4 utilizes Ridge Regression. Ridge regression is an extension of linear regression where model complexity and the potential for over-fitting are addressed by adding a penalty parameter to penalize large coefficients this has the effect of favoring a parsimonious model. Model 5 uses Lasso Regression. LASSO (Least Absolute Shrinkage and Selection Operator) regression is an extension of linear regression where model complexity and the potential for over-fitting are addressed by limiting the sum of the absolute values of model coefficients. We used the `glmnet` package to build our regularized regression models (with alpha = 0 for ridge regression and alpha = 1 for lasso regression).
+
+For `R` code and model implementation details, please refer to the code appendix.
+
+# RESULTS
+
+## Model Selection
+We output the performance metrics of all models in Table 1 to select the model with the strongest predictive promise. We evaluated performance using the R-squared value and Root Mean Squared Error (RMSE). Lower RMSE and higher R-squared values were indicative of a stronger model. To succinctly summarize our model optimization attempts and results, we captured the method used as well as the number of variables considered and corresponding evaluation metrics for training and test data.
+
+From the model statistics in Table 1, we can extend that:
+
+* **Var_Num**: while all models consider a relatively low number of variables, `Model 1`, the simple linear model, is clearly the simplest.
+* **R2_train**: Model 4 is the highest performing, followed by Models 5 and 3. A higher R squared value for this column is indicative of stronger predictive performance for (seen) training data. Regularization and raw (broader) data appears to be correlated with stronger predictive outcomes on training data.
+* **RMSE_train**: Models 1, 5, and then 4 have the lowest error for (seen) training data,
+* **R2_test**: Model 3 is the highest performing (by a relatively significant margin), followed by Models 2, 5 and then 4. A higher R squared value for this column is indicative of stronger predictive performance on (unseen) testing data. 
+* **RMSE_test**: Models 5, 4, and then 3 have the lowest error for (unseen) testing data. Regularization methods appear to reduce error.
+
+To find the point of balance between model complexity, goodness of fit and error, we elect Model 3. The inclusion of population data in conjunction with the elimination of impertinent variables via step() function appears to have led to our strongest performing model. Model 3 was the most promising of models due to its simplicity, relatively low error rate (all models performed well here), and strong performance on unseen data. This last metric, unseen data performance, was the deciding factor.
+
+
+\begin{table}[]
+\captionof{table}{Regression Model Comparison} \label{tab:title}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+Model & Method          & Number of Variables & $R^2$ train & RMSE\_train & $R^2$ test & RMSE\_test \\ \hline
+1     & Simple Linear   & 1                   & 0.8056      & 2.3288      & 0.8056     & 2.5144     \\ \hline
+2     & Multiple Linear & 7                   & 0.8207      & 2.2255      & 0.8207     & 2.3869     \\ \hline
+3     & Multiple Linear & 6                   & 0.8434      & 2.0714      & 0.8434     & 2.3098     \\ \hline
+4     & Ridge           & 6                   & 0.8403      & 2.1129      & 0.7875     & 2.3333     \\ \hline
+5     & Lasso           & 6                   & 0.8403      & 2.1129      & 0.7874     & 2.3341     \\ \hline
+\end{tabular}\par
+\bigskip
+\textbf{Table 1} Model performance metrics used to evaluate and select from different modeling approaches
+\end{table}
+
+
+## Model Evaluation
+Model 3 was selected due to it's parsimonious explanation of the data's variance (highest $R^2$ value) balanced with fewer predictor variables. Here we evaluate and interpret Model 3's fit beginning with a look at the predictor variables and their selection. Model 3 was initialized with the following feature variables:  
+
+1. `percent.pic` - (numeric) percent of all deaths attributed to PIC
+2. `mean_preCOVID_diff` - (numeric) mean excess PI for flu seasons 2013-14 $\rightarrow$ 2018-19 
+3. `popestimate2019` - (numeric) state-level population estimate (US Census Bureau)
+4. `pop_density` - (numeric) state-level population density (US Census Bureau)
+5. `soe_week` - (factor) state of emergency declaration date
+6. `sah_week` - (factor) stay at home order issuance date
+7. `closures_daycare` - (factor) daycare closures ordered (Yes, Restricted, No)
+8. `closures_retail` - non-essential retail closures ordered (Yes, Regional, No)
+9. `face_coverings_required_in_public` - order requiring the use of face coverings in public (Yes, Varies by county, No)
+10. `out_of_state_travel_restrictions` - Out-of-state travel restrictions enacted (Mandatory quarantine, Limited quarantine, Travel suspended, Recommended quarantine, No)
+
+The initial fit of the data with all 10 numeric and categorical feature variables resulted in a highly significant fit and an Adjusted $R^2$ value of 0.8425. However, in an effort to simplify the model, we used AIC step-wise feature selection to select for significant predictor features. As a result, Model 3 simplified to the following equation: 
+
+\begin{equation}
+\begin{split}
+  \text{ PI\_expected\_diff\_imp } \sim \text{ percent.pic } + \text{ popestimate2019 } + \text{ sah\_week } + \text{ closures\_daycare } \dots \\
+   + \text{ closures\_retail } + \text{ out\_of\_state\_travel\_restrictions } + \text{ pop\_density }
+\end{split}
+\end{equation}
+  
+
+It is interesting to note which feature variables were reduced from the full version of Model 3. The feature variable `mean_preCOVID_diff` gives a measure of the excess PI mortality before the pandemic (flu seasons 2013-14 $\rightarrow$ 2018-19). `mean_preCOVID_diff` did not significantly contribute to the model which suggests that states with excess PI before the pandemic were no more likely to exhibit excess PI mortality during the pandemic than states with little or no preCOVID excess PI. Additionally, `face_covering_required_in_public` had little predictive power over excess PI mortality. The date of the State of Emergency declaration for a given state did not significantly contribute to the model, but this is not surprising since all states declared emergency within a relatively short time frame (first two weeks of March 2020 with the exception of Washington State, February 29th 2020). 
+
+Table 2 shows Model 3 step-wise regression results ordered by p-value. We summarize the results as follows: As in the baseline linear model, Model 1, PIC% is positively correlated with excess PI; this is the most significant coefficient in the model. The positive and strongly significant coefficients for the numeric features for state-level population and population density suggest that populous states with dense urban settings were more likely to have excess PI mortality. Model 3 includes several significant coefficients for government restriction feature variables. Closures for day care (Yes & Restricted) were associated with a decrease in excess PI mortality. The positive coefficient for `sah_week` suggests states that issued later stay at home warnings were associated with higher PI mortality. Coefficients for the factor levels for Out of State Travels were more nuanced: states with no or limited restrictions had a relatively higher PI mortality compared to states with regional or recommended restrictions. However, mandatory quarantine travel restrictions, the most severe of travel restriction levels, is associated with a relative increase in PI mortality. These findings are significant, because we demonstrate here that state-level government restriction data adds statistically significant power to our models ability to account for the state-level variance in excess PI deaths.
+    
+
+\begin{table}[]
+\captionof{table}{Model 3 (AIC step) Summary} \label{tab:title}
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+term                                                                 & estimate      & std.error    & statistic  & p.value       \\ \hline
+percent.pic                                                          & 4.817748e-01  & 9.118305e-03 & 52.8360050 & 7.793126e-229 \\ \hline
+popestimate (2019)                                                   & 8.822779e-08  & 1.570852e-08 & 5.6165551  & 2.972349e-08  \\ \hline
+closures\_retail (Yes)                                               & 1.531836e+00  & 2.972614e-01 & 5.1531625  & 3.472289e-07  \\ \hline
+sah\_week                                                            & 8.224297e-01  & 1.735772e-01 & 4.7381212  & 2.691026e-06  \\ \hline
+pop\_density                                                         & 2.604837e-04  & 5.274179e-05 & 4.9388482  & 1.018075e-06  \\ \hline
+out\_of\_state\_travel\_restrictions (Mandatory Quarantine)          & 1.580858e+00  & 3.672736e-01 & 4.3043049  & 1.953615e-05  \\ \hline
+closures\_daycare (Restricted)                                       & -1.342262e+00 & 5.072382e-01 & -2.6462165 & 8.351519e-03  \\ \hline
+out\_of\_state\_travel\_restrictions (No)                            & 1.052024e+00  & 3.518286e-01 & 2.9901599  & 2.901639e-03  \\ \hline
+out\_of\_state\_travel\_restrictionsRegional                         & -1.258828e+00 & 5.936055e-01 & -2.1206477 & 3.435768e-02  \\ \hline
+out\_of\_state\_travel\_restrictionsRecommended quarantine           & -1.335704e+00 & 6.057633e-01 & -2.2049938 & 2.783001e-02  \\ \hline
+out\_of\_state\_travel\_restrictions (Limited quarantine / Screened) & 1.346390e+00  & 6.035499e-01 & 2.2307846  & 2.606121e-02  \\ \hline
+closures\_daycare (Yes)                                              & -1.827355e-01 & 3.499846e-01 & -0.5221244 & 6.017748e-01  \\ \hline
+(Intercept)                                                          & -1.831924e+01 & 2.687997e+00 & -6.8151989 & 2.280689e-11  \\ \hline
+\end{tabular}\par
+\bigskip
+\textbf{Table 2} Model 3 AIC step-wise regression summary table 
+\end{table}
+
+
+```{r message=F, out.width="100%", fig.cap = "Stepwise AIC Model 3 diagnostic plots. \\label{fig:plot5}"}
+im_path <- "/home/bonzilla/Documents/MSDS/DATA621/saving_mod3diagnostics.png"
+knitr::include_graphics( im_path )
+```
+
+
+# DISCUSSION & CONCLUSIONS
+
+On examining data at the national level, excess PI mortality in the U.S. was significantly greater for the 2020-2021 flu season. On the surface, this finding contradicts the hypothesis that communicable diseases such as pneumonia and influenza have decreased during the COVID-19 pandemic, however, this also assumes complete independence of PI and PIC mortality rates. A recent study by Faust and Rio (2020) establishes why this is not the case [@faust2020assessment]. Faust & Rio observed discrepancies between methods used to calculate COVID-19 and influenza mortality rates and in response, developed independent and more clinically consistent measures of COVID-19 and influenza mortality. Faust and Rio observe an excess of influenza deaths for the 2019-2020 flu season, but also infer from their analysis that the CDC's current estimates either inflate influenza mortality, undercount COVID-19 or both. Faust and Rio outline several reasons that current COVID-19 and influenza mortalities are confounded: 1) Deaths from COVID-19 may be undercounted due to COVID-19 test availability and false-negative rates. 2) Influenza deaths may be undercounted because influenza reporting has not been reported as publicly or with the same scrutiny as COVID-19. 3) The confirmation and reporting of COVID-19 deaths is an ongoing process making current statistics premature. 4) There exists high variability at the state and county level for determining which deaths are attributed to COVID-19. Because of these and similar reporting issues, we do not interpret the excess PI mortality rates observed in our analysis as either supporting or refuting hypotheses regarding the impact the COVID-19 pandemic on communicable disease; such an analysis is better suited once data that more accurately determines COVID case fatality rates emerges. Rather, we incorporated data on state-level government restrictions to probe the data for statistically significant involvement of such measures.
+
+In this report, we developed a multiple linear regression model that incorporates state-level demographic features (i.e. population and population density) and variables that summarize state-level COVID restrictions in an effort to explain the variability of the 2020-2021 excess PI mortality. Following multiple modeling attempts using various methods (multiple, ridge and lasso regression) we arrived at our Model 3, a multiple linear regression model that provides a statistically significant decrease in the residual sum of squares (anova, $\chi^2$-test Pr($\chi$) < 2.2e-16). ANOVA result confirms that when compared to the simple linear regression, Model 3 performs significantly better at capturing the Excess PI mortality data. This finding is an important first step at establishing a measurable impact of the enacted government restrictions on mitigating communicable diseases during the COVID-19 pandemic. However, the model is far from complete. Turning our attention to the Model 3 diagnostic plots (Figure \ref{fig:plot5}), we see that the variance of residuals as a function of fitted values are not entirely constant (left panel). Additionally, the normal plot of residuals (right panel) shows evidence of heavy-tailed residuals which suggests there are further variables or transformations of existing variables that need to be incorporated to better describe excess PI mortality.
+
+In conclusion, we find that incorporating state-level government restrictions resulted in a statistically significant improvement for modeling excess PI mortality during the 2020-21 flu season. We acknowledge that reporting of COVID-19 deaths has been inconsistent across states as well as across the duration of the pandemic. Comparing COVID-19 with pneumonia and influenza mortality data is further complicated by the fact that the deseases are not reported with the same methods or measurements. However, we view our simple modeling approach as preliminary evidence supporting a role for state-level government restrictions having had a significant effect on the communicable diseases, pneumonia and influenza. Further research is necessary to apply this finding to other communicable diseases as well as to explore the role of disease mitigation measures more broadly as in other countries or to perform more focused research on the level of counties, provinces or communities.
+
